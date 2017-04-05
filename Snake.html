@@ -1,0 +1,271 @@
+<!DOCTYPE HMTL>
+<html>
+    <head>
+        <meta charset="utf-8">
+
+
+    </head>
+    <body>
+        <canvas id="snakeCanvas" width="1200" height="600"></canvas>
+        <script type="text/javascript">
+            window.requestAnimFrame = (function(callback) {
+                return window.requestAnimationFrame || window.webkitRequestAnimationFrame || window.mozRequestAnimationFrame || window.oRequestAnimationFrame || 
+                       window.msRequestAnimationFrame && function(callback) {
+                       window.setTimeout(callback, 1000 / 60);
+                        };
+            })();
+
+            var canvas = document.getElementById("snakeCanvas"),
+                ctx = canvas.getContext("2d"),
+                h = document.getElementById('snakeCanvas').height,
+                w = document.getElementById('snakeCanvas').width,
+                keyboard = {keyEnter: false, keyUp: false, keyDown: false, keyEsc: false,};
+
+            var snakeArray,
+                cellWidth = 40,
+                cellHeight = 40,
+                food,
+                apple = {x: 0, y: 0},
+                score,
+                direction;
+                game = {status: 'medium',},
+                speed = 60;
+
+            function initialize(){
+                var gameLoop;
+                direction = 'right';
+                createSnake();
+                createFood();
+                score = 0;
+                requestAnimFrame(function(){
+                    animate();
+                });
+            }
+
+            function createSnake(){
+                var snakeLength = 3;
+                snakeArray = [];
+                for(var i = snakeLength; i > 0; i--){
+                    snakeArray.push({x: i, y: 0});
+                }
+            }
+            function createFood(){
+                food = {
+                    x: Math.floor(Math.random() * (w / cellWidth)),
+                    y: Math.floor(Math.random() * (h / cellHeight)),
+                }
+            }
+            function createApple(){
+                apple = {
+                    x: Math.floor(Math.random() * (w / cellWidth)),
+                    y: Math.floor(Math.random() * (h / cellHeight)),
+                }
+            }
+
+            function drawSnakeCell(x, y){
+                    ctx.fillStyle = "black";
+                    ctx.fillRect(x * cellWidth, y * cellHeight, cellWidth, cellHeight);
+                    ctx.strokeStyle = "white";
+                    ctx.strokeRect(x* cellWidth, y * cellHeight, cellWidth, cellHeight);
+            }
+            function drawFood(x, y){
+                    ctx.fillStyle = "white";
+                    ctx.fillRect(x * cellWidth, y * cellHeight, cellWidth, cellHeight);
+                    ctx.strokeStyle = "black";
+                    ctx.strokeRect(x* cellWidth, y * cellHeight, cellWidth, cellHeight);
+            }
+            function drawApple(x, y){
+                    ctx.fillStyle = "red";
+                    ctx.fillRect(x * cellWidth, y * cellHeight, cellWidth, cellHeight);
+                    ctx.strokeStyle = "black";
+                    ctx.strokeRect(x* cellWidth, y * cellHeight, cellWidth, cellHeight);
+            }
+
+            function animate(){
+                if(keyboard.keyEsc){
+                    ctx.clearRect(0, 0, w, h);
+                    resetKeyboard();
+                    drawMenu();
+                    drawOptMenu();
+                    return;
+                }
+                ctx.fillStyle = "rgb(88, 119, 44)";
+                ctx.fillRect(0, 0, w, h);
+                ctx.strokeStyle = "black";
+                ctx.strokeRect(0, 0, w, h);
+
+                var newX = snakeArray[0].x,
+                    newY = snakeArray[0].y;
+
+
+                if(direction == 'right') newX += 1;
+                else if(direction == 'left') newX -= 1;
+                else if(direction == 'up') newY -= 1;
+                else if(direction == 'down') newY += 1;
+
+                if (score == 3 || score == 10 || score == 25 || score == 35){
+                    drawApple(apple.x, apple.y)
+                    if(newX == apple.x && newY == apple.y){
+                    score += 5;
+                    var snakeApple = {x: newX, y: newY,}
+                    snakeArray.push(snakeApple);
+                    }
+                }
+
+                if(speed == 60){
+                    if(newX <= -1){
+                        newX = w/cellWidth;
+                    }
+                    else if(newY <= -1){
+                        newY = h/cellHeight;
+                    }
+                    else if(newX >= w/cellWidth){
+                        newX = 0;
+                    }
+                    else if(newY >= h/cellHeight){
+                        newY = 0;
+                    }
+                    if(checkCollision(snakeArray, newX, newY)) return initialize();
+                }else if(newX == -1 || newY == -1 || newX >= w/cellWidth || newY >= h/cellHeight || checkCollision(snakeArray, newX, newY)){
+                     return initialize();
+                 }
+
+                if(newX == food.x && newY == food.y){
+                    score++;
+                    var snakeHead = {x: newX, y: newY,};
+                    createFood();
+                }else{
+                    var snakeTail = snakeArray.pop();
+                    snakeTail.x = newX;
+                    snakeTail.y = newY;
+                }
+
+                snakeArray.unshift(snakeHead || snakeTail);
+
+                for(var i = 0; i < snakeArray.length; i++){
+                    var cell = snakeArray[i]
+                    drawSnakeCell(cell.x, cell.y);
+                }
+                drawFood(food.x, food.y);
+
+                var text = "Score:\t" + score;
+                ctx.font = "32px Arial";
+                ctx.fillText(text, 80, 46);
+
+                function checkCollision(array, x, y){
+                    for(var i = 0; i < snakeArray.length; i ++){
+                        if(snakeArray[i].x * cellWidth == food.x && snakeArray[i].y * cellHeight == food.y) createFood();
+                        if(snakeArray[i].x == x && snakeArray[i].y == y) return true;
+                    }
+                    return false;
+                }
+
+                document.onkeydown = function(evt){
+                setTimeout(function(){
+                    if(evt.keyCode == 37 && direction != 'right') direction = 'left';
+                    else if(evt.keyCode == 38 && direction != 'down') direction = 'up';
+                    else if(evt.keyCode == 39 && direction != 'left') direction = 'right';
+                    else if(evt.keyCode == 40 && direction != 'up') direction = 'down';
+                    else if(evt.which == 27) keyboard.keyEsc = 'true';
+                }, 90);
+                }
+
+                setTimeout(function() {
+                    requestAnimFrame(function(){
+                        animate();
+                    });
+                }, speed);
+            }
+
+
+
+            function drawMenu(){
+                ctx.fillStyle = 'black';
+                ctx.fillRect(0, 0, w, h);
+                ctx.font = "100px Arial";
+                ctx.fillStyle = 'white';
+                ctx.textAlign = 'center';
+                ctx.fillText("Choose Level", w/2, 2*h/8);
+                ctx.font = "75px Arial";
+                ctx.fillStyle = 'white';
+                ctx.fillText("Easy", w/2, 4*h/8);
+                ctx.font = "75px Arial";
+                ctx.fillStyle = 'white';
+                ctx.fillText("Medium", w/2, 5*h/8);
+                ctx.font = "75px Arial";
+                ctx.fillStyle = 'white';
+                ctx.fillText("Hard", w/2, 6*h/8);
+            }
+
+            function drawOptMenu(){
+                drawMenu();
+                if(keyboard.keyUp == true){
+                    ctx.font = "75px Arial";
+                    ctx.fillStyle = 'gold';
+                    ctx.fillText("Easy", w/2, 4*h/8);
+                }else if(keyboard.keyDown == true){
+                    ctx.font = "75px Arial";
+                    ctx.fillStyle = 'gold';
+                    ctx.fillText("Hard", w/2, 6*h/8);
+                }else if(keyboard.default == true){
+                    ctx.font = "75px Arial";
+                    ctx.fillStyle = 'gold';
+                    ctx.fillText("Medium", w/2, 5*h/8);
+                }
+                document.onkeydown = function(evt){
+                    if(keyboard.keyEnter == true){
+                        drawMenu();
+                        drawOptMenu();
+                        resetKeyboard();
+                        return;
+                    }
+                    if(event.which == 13){
+                        keyboard.keyEnter = true;
+                        initialize();
+                    } else if(event.which == 38){
+                        if(keyboard.keyDown == true){
+                            keyboard.default = true;
+                            keyboard.keyUp = false;
+                            keyboard.keyDown = false;
+                            game.lvl = 'medium';
+                            speed = 60;
+                            drawOptMenu();
+                            return;
+                        }
+                        keyboard.default = false;
+                        keyboard.keyUp = true;
+                        keyboard.keyDown = false;
+                        game.lvl = 'easy';
+                        speed = 75;
+                    }else if(event.which == 40){
+                        if(keyboard.keyUp == true){
+                            keyboard.default = true;
+                            keyboard.keyUp = false;
+                            keyboard.keyDown = false;
+                            game.lvl = 'medium';
+                            speed = 60;
+                            drawOptMenu();
+                            return;
+                        }
+                        keyboard.default = false;
+                        keyboard.keyDown = true;
+                        keyboard.keyUp = false;
+                        game.lvl = 'hard';
+                        speed = 30;
+                    }
+                    drawOptMenu();
+            };
+            }
+
+
+            function resetKeyboard(){keyboard.default = true; keyboard.keyDown = false; keyboard.keyEnter = false; keyboard.keyEnter = false; keyboard.keyEsc = false; keyboard.keyUp = false;}
+
+
+            createApple();
+            drawMenu();
+            drawOptMenu();
+
+
+        </script>
+    </body>
+</html>
